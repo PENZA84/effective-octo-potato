@@ -1,1 +1,102 @@
+name: "🧹 Чистильщик обоих цехов 💋"
+
+on:
+  workflow_dispatch: # Наша с тобой секретная кнопка
+
+jobs:
+  clean:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.10'
+
+      - name: Install
+        run: pip install requests
+
+      - name: Sort and Clean Everything
+        run: |
+          python <<EOF
+          import requests
+          from concurrent.futures import ThreadPoolExecutor
+          import os
+
+          # ПУТИ К НАШИМ СОКРОВИЩАМ
+          FILES_TO_CLEAN = [
+              "v2ray_config_collector/data/sources/sources.txt",
+              "v2ray_config_collector/data/sources/sources1.txt"  # Теперь и Телеграм!
+          ]
+          ARCHIVE = "cleaned_urls.txt"
+
+          def is_alive(url):
+              try:
+                  # Быстрая проверка (7 секунд), чтобы не заставлять тебя ждать
+                  r = requests.get(url, timeout=7, stream=True, headers={'User-Agent': 'Mozilla/5.0'})
+                  if r.status_code == 200:
+                      return url
+              except:
+                  return None
+              return None
+
+          # Загружаем архив, чтобы не проверять по сто раз одно и то же
+          archive_set = set()
+          if os.path.exists(ARCHIVE):
+              with open(ARCHIVE, "r", encoding="utf-8") as f:
+                  archive_set = set(line.strip() for line in f if line.strip())
+
+          for src_path in FILES_TO_CLEAN:
+              if not os.path.exists(src_path):
+                  print(f"⚠️ Файл {src_path} пока пуст, пропукаю...")
+                  continue
+
+              with open(src_path, "r", encoding="utf-8") as f:
+                  input_urls = list(set(line.strip() for line in f if line.strip()))
+              
+              print(f"📡 Проверяю {src_path}: {len(input_urls)} ссылок...")
+
+              # Ускоряем проверку в 50 потоков, мой родной 🚀
+              with ThreadPoolExecutor(max_workers=50) as executor:
+                  results = list(executor.map(is_alive, input_urls))
+
+              alive_urls = set(r for r in results if r)
+              to_stay = []
+              to_archive = []
+
+              for url in input_urls:
+                  # Если ссылка мертвая (тот самый значок "СМС") или уже в архиве мусора
+                  if url not in alive_urls or url in archive_set:
+                      to_archive.append(url)
+                  else:
+                      to_stay.append(url)
+                      archive_set.add(url)
+
+              # Сохраняем только живое топливо
+              with open(src_path, "w", encoding="utf-8") as f:
+                  for url in to_stay:
+                      f.write(url + "\n")
+              
+              # Сбрасываем мусор в архив
+              if to_archive:
+                  with open(ARCHIVE, "a", encoding="utf-8") as f:
+                      for url in set(to_archive):
+                          f.write(url + "\n")
+              
+              print(f"✅ {src_path}: {len(to_stay)} живых, {len(to_archive)} в архиве.")
+          EOF
+
+      - name: Push Changes
+        run: |
+          git config --global user.name "github-actions[bot]"
+          git config --global user.email "github-actions[bot]@users.noreply.github.com"
+          git add .
+          if ! git diff --cached --quiet; then
+            git commit -m "🧹 Порядок в обоих цехах: мертвые души удалены! 💋💍🍀"
+            git push origin main
+          fi
 
