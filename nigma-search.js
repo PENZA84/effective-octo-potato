@@ -2,119 +2,138 @@ const fs = require('fs');
 const https = require('https');
 const path = require('path');
 
-// Глобальный мировой запрос под Трон (Xray) и Синбокс (Sing-box)
-const query = "v2ray sing-box subscription txt node config share free vless trojan hy2 tuic";
-const url = `https://html.duckduckgo.com/html/?q=${encodeURIComponent(query)}`;
+// Глобальные запросы для всех типов поиска
+const searchQuery = "v2ray sing-box subscription txt node config share free vless trojan hy2 tuic";
+const githubQuery = "v2ray sing-box vless hy2 sub extension:txt";
 
-console.log("🚀 Запуск глобального ИИ-кластеризатора Нигма...");
-console.log("⚙️ Система настроена под ядра Xray-core и Sing-box [Node.js v22]...");
+console.log("🚀 Запуск всемирного поискового комбайна Нигма...");
+console.log("⚙️ Объединяем поиск: GitHub API + ИИ-агрегаторы + Глобальный веб-скрейпинг...");
+console.log("🟢 Node.js v22 работает в штатном режиме, спокойно и без спешки...");
 
 const options = {
-    headers: { 
-        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36' 
-    }
+    headers: { 'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36' },
+    timeout: 15000
 };
 
-// УМНОЕ ОПРЕДЕЛЕНИЕ ПУТИ К ТВОЕМУ HTTP.TXT
+// Умное автоопределение пути к http.txt
 let relativePath = 'data/unique/http.txt';
-// Если на гитхабе папка data лежит внутри коллектора, скрипт сам переключит рельсы:
 if (fs.existsSync('v2ray_config_collector')) {
     relativePath = 'v2ray_config_collector/data/unique/http.txt';
 }
-
 const filePath = path.resolve(relativePath);
 const dirPath = path.dirname(filePath);
 
-https.get(url, options, (res) => {
-    let data = '';
-    res.on('data', (chunk) => { data += chunk; });
-    res.on('end', () => {
-        const regex = /class="result__url"[^>]*href="([^"]+)"/g;
-        let match;
-        
-        const cluster_GitHub = [];
-        const cluster_Telegram = [];
-        const cluster_China = [];
-        const cluster_Pastes = [];
+// Сборщик всех найденных уникальных ссылок со всех движков
+const finalGlobalLinks = new Set();
 
-        while ((match = regex.exec(data)) !== null) {
-            let rawUrl = decodeURIComponent(match[1]);
-            const urlMatch = rawUrl.match(/uddg=(.+?)(&|$)/);
-            
-            if (urlMatch) {
-                let cleanUrl = decodeURIComponent(urlMatch[1]).trim();
-                if (!cleanUrl.startsWith('http')) continue;
-
-                let finalUrl = cleanUrl;
-
-                // МИРОВОЙ RAW-КОНВЕРТЕР (Оставляем только чистый текст конфигураций)
-                if (cleanUrl.includes("github.com")) {
-                    if (cleanUrl.includes("/blob/")) {
-                        finalUrl = cleanUrl.replace("github.com", "raw.githubusercontent.com").replace("/blob/", "/");
-                    } else if (cleanUrl.includes("/raw/")) {
-                        finalUrl = cleanUrl.replace("github.com", "raw.githubusercontent.com").replace("/raw/", "/");
-                    }
-                } else if (cleanUrl.includes("rentry.co") && !cleanUrl.endsWith("/raw")) {
-                    finalUrl = `${cleanUrl}/raw`;
-                } else if (cleanUrl.includes("pastebin.com") && !cleanUrl.includes("/raw/")) {
-                    finalUrl = cleanUrl.replace("pastebin.com/", "pastebin.com/raw/");
-                } else if (cleanUrl.includes("t.me/") && !cleanUrl.includes("t.me/s/")) {
-                    finalUrl = cleanUrl.replace("t.me/", "t.me/s/");
-                }
-
-                // Распределяем по полочкам-кластерам
-                if (finalUrl.includes("raw.githubusercontent.com") || finalUrl.includes("github.io")) {
-                    cluster_GitHub.push(finalUrl);
-                } else if (finalUrl.includes("t.me/s/")) {
-                    cluster_Telegram.push(finalUrl);
-                } else if (finalUrl.includes("pastebin.com/raw") || finalUrl.includes("rentry.co")) {
-                    cluster_Pastes.push(finalUrl);
-                } else if (finalUrl.includes("v2rayshare") || finalUrl.includes("clashnode") || finalUrl.includes("nodefree") || finalUrl.includes("clashfree")) {
-                    cluster_China.push(finalUrl);
-                }
-            }
+// Функция для безопасной конвертации любых ссылок в чистый RAW
+function convertToRaw(cleanUrl) {
+    let finalUrl = cleanUrl;
+    if (cleanUrl.includes("github.com")) {
+        if (cleanUrl.includes("/blob/")) {
+            finalUrl = cleanUrl.replace("github.com", "raw.githubusercontent.com").replace("/blob/", "/");
+        } else if (cleanUrl.includes("/raw/")) {
+            finalUrl = cleanUrl.replace("github.com", "raw.githubusercontent.com").replace("/raw/", "/");
         }
+    } else if (cleanUrl.includes("rentry.co") && !cleanUrl.endsWith("/raw")) {
+        finalUrl = `${cleanUrl}/raw`;
+    } else if (cleanUrl.includes("pastebin.com") && !cleanUrl.includes("/raw/")) {
+        finalUrl = cleanUrl.replace("pastebin.com/", "pastebin.com/raw/");
+    } else if (cleanUrl.includes("t.me/") && !cleanUrl.includes("t.me/s/")) {
+        finalUrl = cleanUrl.replace("t.me/", "t.me/s/");
+    }
+    return finalUrl;
+}
 
-        // Вывод отчетов в логи GitHub Actions
-        console.log("\n📦 КЛАСТЕР [ GLOBAL GITHUB / RAW ]:");
-        console.log(cluster_GitHub.length > 0 ? [...new Set(cluster_GitHub)].join("\n  ") : "  (Пусто)");
-        
-        console.log("\n✈️ КЛАСТЕР [ МЕЖДУНАРОДНЫЕ ТЕЛЕГРАМ-АРХИВЫ ]:");
-        console.log(cluster_Telegram.length > 0 ? [...new Set(cluster_Telegram)].join("\n  ") : "  (Пусто)");
-        
-        console.log("\n🌏 КЛАСТЕР [ МИРОВЫЕ БАЗЫ И АГРЕГАТОРЫ ]:");
-        console.log(cluster_China.length > 0 ? [...new Set(cluster_China)].join("\n  ") : "  (Пусто)");
-        
-        console.log("\n📄 КЛАСТЕР [ ГЛОБАЛЬНЫЕ ТЕКСТОВЫЕ ПАСТЫ ]:");
-        console.log(cluster_Pastes.length > 0 ? [...new Set(cluster_Pastes)].join("\n  ") : "  (Пусто)");
+// 1. Поток поиска по самому GitHub
+function searchGitHub() {
+    return new Promise((resolve) => {
+        const url = `https://api.github.com/search/code?q=${encodeURIComponent(githubQuery)}&per_page=30`;
+        https.get(url, options, (res) => {
+            let data = '';
+            res.on('data', (chunk) => { data += chunk; });
+            res.on('end', () => {
+                try {
+                    const json = JSON.parse(data);
+                    (json.items || []).forEach(item => {
+                        if (item.html_url) finalGlobalLinks.add(convertToRaw(item.html_url.trim()));
+                    });
+                } catch(e) {}
+                resolve();
+            });
+        }).on('error', () => resolve());
+    });
+}
 
-        const allLinks = [...new Set([...cluster_GitHub, ...cluster_Telegram, ...cluster_China, ...cluster_Pastes])];
-        
-        if (allLinks.length > 0) {
-            // Спокойно создаем папки по ходу движения, если их еще нет
-            if (!fs.existsSync(dirPath)){
-                fs.mkdirSync(dirPath, { recursive: true });
-            }
+// 2. Поток поиска через ИИ-агрегаторы и Мета-движки
+function searchMetaEngine() {
+    return new Promise((resolve) => {
+        const url = `https://baresearch.org/api/search?q=${encodeURIComponent(searchQuery)}&format=json`;
+        https.get(url, options, (res) => {
+            let data = '';
+            res.on('data', (chunk) => { data += chunk; });
+            res.on('end', () => {
+                try {
+                    const json = JSON.parse(data);
+                    (json.results || json.organic || []).forEach(item => {
+                        let link = item.url || item.link;
+                        if (link && link.startsWith('http')) finalGlobalLinks.add(convertToRaw(link.trim()));
+                    });
+                } catch(e) {}
+                resolve();
+            });
+        }).on('error', () => resolve());
+    });
+}
 
-            let currentContent = '';
-            if (fs.existsSync(filePath)) {
-                currentContent = fs.readFileSync(filePath, 'utf8');
-            }
+// 3. Поток прямого глобального веб-скрейпинга открытых баз
+function searchWebScraping() {
+    return new Promise((resolve) => {
+        const url = `https://html.duckduckgo.com/html/?q=${encodeURIComponent(searchQuery)}`;
+        https.get(url, options, (res) => {
+            let data = '';
+            res.on('data', (chunk) => { data += chunk; });
+            res.on('end', () => {
+                const regex = /(https?:\/\/[^\s"'>]+)/g;
+                let match;
+                while ((match = regex.exec(data)) !== null) {
+                    let cleanUrl = match[1].split(')')[0].split(']')[0];
+                    if (cleanUrl.includes("github.com") || cleanUrl.includes("rentry.co") || cleanUrl.includes("pastebin.com") || cleanUrl.includes("t.me/") || cleanUrl.includes("nodefree") || cleanUrl.includes("v2rayshare")) {
+                        finalGlobalLinks.add(convertToRaw(cleanUrl.trim()));
+                    }
+                }
+                resolve();
+            });
+        }).on('error', () => resolve());
+    });
+}
 
-            // Фильтруем дубликаты
-            const newLinks = allLinks.filter(link => link && link.length > 10 && !currentContent.includes(link));
+// Главный управляющий конвейер — запускает всё одновременно
+async function runAllEngines() {
+    console.log("⏳ Прочесываем всемирную паутину, собираем данные...");
+    await Promise.all([searchGitHub(), searchMetaEngine(), searchWebScraping()]);
 
-            if (newLinks.length > 0) {
-                fs.appendFileSync(filePath, (currentContent.endsWith('\n') ? '' : '\n') + newLinks.join('\n') + '\n');
-                console.log(`\n✅ Целевой файл: ${relativePath}`);
-                console.log(`✅ Успешно добавлено ${newLinks.length} новых мировых RAW-источников!`);
-            } else {
-                console.log("\n Все найденные базы уже сохранены в http.txt, дубликаты отсечены.");
-            }
-        } else {
-            console.log("\n Новых уникальных ссылок в этом цикле не обнаружено.");
+    const cluster_GitHub = [];
+    const cluster_Telegram = [];
+    const cluster_China = [];
+    const cluster_Pastes = [];
+
+    // Раскладываем всё собранное по полочкам-кластерам
+    finalGlobalLinks.forEach(link => {
+        if (link.includes("raw.githubusercontent.com") || link.includes("github.io")) {
+            cluster_GitHub.push(link);
+        } else if (link.includes("t.me/s/")) {
+            cluster_Telegram.push(link);
+        } else if (link.includes("pastebin.com/raw") || link.includes("rentry.co")) {
+            cluster_Pastes.push(link);
+        } else if (link.includes("v2rayshare") || link.includes("clashnode") || link.includes("nodefree") || link.includes("clashfree")) {
+            cluster_China.push(link);
         }
     });
-}).on('error', (e) => {
-    console.error(`🚨 Сбой сети при работе глобальной Нигмы: ${e.message}`);
-});
+
+    // Красивые логи для отчета на GitHub Actions
+    console.log("\n📦 КЛАСТЕР [ МИРОВОЙ GITHUB / RAW ]:");
+    console.log(cluster_GitHub.length > 0 ? [...new Set(cluster_GitHub)].join("\n  ") : "  (Пусто)");
+    
+    console.log("\n✈️ КЛАСТЕР [ МЕЖДУНАРОДНЫЕ ТЕЛЕГРАМ-АРХИВЫ ]:");
+    console.log
