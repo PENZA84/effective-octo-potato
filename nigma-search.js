@@ -136,4 +136,38 @@ async function runAllEngines() {
     console.log(cluster_GitHub.length > 0 ? [...new Set(cluster_GitHub)].join("\n  ") : "  (Пусто)");
     
     console.log("\n✈️ КЛАСТЕР [ МЕЖДУНАРОДНЫЕ ТЕЛЕГРАМ-АРХИВЫ ]:");
-    console.log
+    console.log(cluster_Telegram.length > 0 ? [...new Set(cluster_Telegram)].join("\n  ") : "  (Пусто)");
+    
+    console.log("\n🌏 КЛАСТЕР [ ВСЕМИРНЫЕ АГРЕГАТОРЫ И БАЗЫ ]:");
+    console.log(cluster_China.length > 0 ? [...new Set(cluster_China)].join("\n  ") : "  (Пусто)");
+    
+    console.log("\n📄 КЛАСТЕР [ ГЛОБАЛЬНЫЕ ТЕКСТОВЫЕ ПАСТЫ ]:");
+    console.log(cluster_Pastes.length > 0 ? [...new Set(cluster_Pastes)].join("\n  ") : "  (Пусто)");
+
+    const allLinks = [...new Set([...cluster_GitHub, ...cluster_Telegram, ...cluster_China, ...cluster_Pastes])];
+    
+    if (allLinks.length > 0) {
+        if (!fs.existsSync(dirPath)){
+            fs.mkdirSync(dirPath, { recursive: true });
+        }
+
+        let currentContent = '';
+        if (fs.existsSync(filePath)) {
+            currentContent = fs.readFileSync(filePath, 'utf8');
+        }
+
+        const newLinks = allLinks.filter(link => link && link.length > 10 && !currentContent.includes(link));
+
+        if (newLinks.length > 0) {
+            fs.appendFileSync(filePath, (currentContent.endsWith('\n') ? '' : '\n') + newLinks.join('\n') + '\n');
+            console.log(`\n✅ Полный триумф всемирной паутины! Обновлен файл: ${relativePath}`);
+            console.log(`✅ Добавлено ${newLinks.length} новых уникальных глобальных источников для Трона и Синбокса!`);
+        } else {
+            console.log("\n Все найденные в паутине базы уже есть в http.txt, дубликаты отсечены.");
+        }
+    } else {
+        console.log("\n Во всей всемирной паутине новых сырых баз пока не появилось.");
+    }
+}
+
+runAllEngines();
