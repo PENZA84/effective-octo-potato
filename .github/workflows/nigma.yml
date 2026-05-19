@@ -1,0 +1,31 @@
+name: Nigma Cluster Search
+
+on:
+  schedule:
+    - cron: '0 */6 * * *' # Автоматический запуск конвейера каждые 6 часов
+  workflow_dispatch: # Та самая кнопка для твоего личного ручного запуска, когда захочешь
+
+jobs:
+  search-and-cluster:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Проверка кода нашего репозитория
+        uses: actions/checkout@v4
+
+      - name: Установка обновленной Node.js (Версия 22 LTS)
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+
+      - name: Запуск глобального поиска Нигма
+        run: node nigma-search.js
+
+      - name: Сохранение результатов в http.txt
+        run: |
+          git config --local user.email "action@github.com"
+          git config --local user.name "GitHub Action"
+          # Проверяем пути, чтобы точно записать в нужный http.txt без ошибок
+          git add v2ray_config_collector/data/unique/http.txt || true
+          git add data/unique/http.txt || true
+          git commit -m "Нигма: добавлены новые глобальные RAW-ссылки под Трон и Синбокс" || echo "Нет новых изменений"
+          git push
