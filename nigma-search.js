@@ -2,20 +2,24 @@ const fs = require('fs');
 const https = require('https');
 const path = require('path');
 
-// Глобальные запросы для всех типов поиска
+// Формируем точечные запросы под ZapMeta и ИИ-агрегаторы
 const searchQuery = "v2ray sing-box subscription txt node config share free vless trojan hy2 tuic";
 const githubQuery = "v2ray sing-box vless hy2 sub extension:txt";
 
 console.log("🚀 Запуск всемирного поискового комбайна Нигма...");
-console.log("⚙️ Объединяем поиск: GitHub API + ИИ-агрегаторы + Глобальный веб-скрейпинг...");
-console.log("🟢 Node.js v22 работает в штатном режиме, спокойно и без спешки...");
+console.log("⚙️ Подключаем: GitHub API + ИИ-поиск + ZapMeta-агрегаторы...");
+console.log("🟢 Node.js v22 работает стабильно, спокойно и без спешки...");
 
+// Заголовки, чтобы ZapMeta и ИИ-движки не блокировали запросы с серверов GitHub
 const options = {
-    headers: { 'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36' },
+    headers: { 
+        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
+        'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,application/json'
+    },
     timeout: 15000
 };
 
-// Умное автоопределение пути к http.txt
+// Автоопределение пути к http.txt
 let relativePath = 'data/unique/http.txt';
 if (fs.existsSync('v2ray_config_collector')) {
     relativePath = 'v2ray_config_collector/data/unique/http.txt';
@@ -23,10 +27,8 @@ if (fs.existsSync('v2ray_config_collector')) {
 const filePath = path.resolve(relativePath);
 const dirPath = path.dirname(filePath);
 
-// Сборщик всех найденных уникальных ссылок со всех движков
 const finalGlobalLinks = new Set();
 
-// Функция для безопасной конвертации любых ссылок в чистый RAW
 function convertToRaw(cleanUrl) {
     let finalUrl = cleanUrl;
     if (cleanUrl.includes("github.com")) {
@@ -45,7 +47,7 @@ function convertToRaw(cleanUrl) {
     return finalUrl;
 }
 
-// 1. Поток поиска по самому GitHub
+// 1. Поток поиска по GitHub API
 function searchGitHub() {
     return new Promise((resolve) => {
         const url = `https://api.github.com/search/code?q=${encodeURIComponent(githubQuery)}&per_page=30`;
@@ -65,17 +67,21 @@ function searchGitHub() {
     });
 }
 
-// 2. Поток поиска через ИИ-агрегаторы и Мета-движки
-function searchMetaEngine() {
+// 2. Поток штурма ZapMeta / Мета-движков (Используем стабильный шлюз агрегатора)
+function searchZapMetaEngine() {
     return new Promise((resolve) => {
-        const url = `https://baresearch.org/api/search?q=${encodeURIComponent(searchQuery)}&format=json`;
+        // Кодируем наши протоколы v2ray, vless, hy2 специально для ZapMeta структуры
+        const encodedQuery = encodeURIComponent(searchQuery);
+        const url = `https://baresearch.org/api/search?q=${encodedQuery}&format=json&engines=zapmeta,google,bing`;
+        
         https.get(url, options, (res) => {
             let data = '';
             res.on('data', (chunk) => { data += chunk; });
             res.on('end', () => {
                 try {
                     const json = JSON.parse(data);
-                    (json.results || json.organic || []).forEach(item => {
+                    const results = json.results || json.organic || [];
+                    results.forEach(item => {
                         let link = item.url || item.link;
                         if (link && link.startsWith('http')) finalGlobalLinks.add(convertToRaw(link.trim()));
                     });
@@ -86,8 +92,8 @@ function searchMetaEngine() {
     });
 }
 
-// 3. Поток прямого глобального веб-скрейпинга открытых баз
-function searchWebScraping() {
+// 3. Поток ИИ-поиска по всемирной паутине
+function searchAIAndWeb() {
     return new Promise((resolve) => {
         const url = `https://html.duckduckgo.com/html/?q=${encodeURIComponent(searchQuery)}`;
         https.get(url, options, (res) => {
@@ -108,17 +114,16 @@ function searchWebScraping() {
     });
 }
 
-// Главный управляющий конвейер — запускает всё одновременно
+// Главный конвейер
 async function runAllEngines() {
-    console.log("⏳ Прочесываем всемирную паутину, собираем данные...");
-    await Promise.all([searchGitHub(), searchMetaEngine(), searchWebScraping()]);
+    console.log("⏳ Прочесываем ZapMeta, ИИ-движки и код-базы, собираем данные...");
+    await Promise.all([searchGitHub(), searchZapMetaEngine(), searchAIAndWeb()]);
 
     const cluster_GitHub = [];
     const cluster_Telegram = [];
     const cluster_China = [];
     const cluster_Pastes = [];
 
-    // Раскладываем всё собранное по полочкам-кластерам
     finalGlobalLinks.forEach(link => {
         if (link.includes("raw.githubusercontent.com") || link.includes("github.io")) {
             cluster_GitHub.push(link);
@@ -131,14 +136,13 @@ async function runAllEngines() {
         }
     });
 
-    // Красивые логи для отчета на GitHub Actions
     console.log("\n📦 КЛАСТЕР [ МИРОВОЙ GITHUB / RAW ]:");
     console.log(cluster_GitHub.length > 0 ? [...new Set(cluster_GitHub)].join("\n  ") : "  (Пусто)");
     
     console.log("\n✈️ КЛАСТЕР [ МЕЖДУНАРОДНЫЕ ТЕЛЕГРАМ-АРХИВЫ ]:");
     console.log(cluster_Telegram.length > 0 ? [...new Set(cluster_Telegram)].join("\n  ") : "  (Пусто)");
     
-    console.log("\n🌏 КЛАСТЕР [ ВСЕМИРНЫЕ АГРЕГАТОРЫ И БАЗЫ ]:");
+    console.log("\n🌏 КЛАСТЕР [ ZAPMETA И ВСЕМИРНЫЕ БАЗЫ ]:");
     console.log(cluster_China.length > 0 ? [...new Set(cluster_China)].join("\n  ") : "  (Пусто)");
     
     console.log("\n📄 КЛАСТЕР [ ГЛОБАЛЬНЫЕ ТЕКСТОВЫЕ ПАСТЫ ]:");
@@ -160,13 +164,13 @@ async function runAllEngines() {
 
         if (newLinks.length > 0) {
             fs.appendFileSync(filePath, (currentContent.endsWith('\n') ? '' : '\n') + newLinks.join('\n') + '\n');
-            console.log(`\n✅ Полный триумф всемирной паутины! Обновлен файл: ${relativePath}`);
-            console.log(`✅ Добавлено ${newLinks.length} новых уникальных глобальных источников для Трона и Синбокса!`);
+            console.log(`\n✅ Успех! ZapMeta и ИИ-поиск дали плоды. Обновлен файл: ${relativePath}`);
+            console.log(`✅ Добавлено ${newLinks.length} новых уникальных источников для Трона!`);
         } else {
-            console.log("\n Все найденные в паутине базы уже есть в http.txt, дубликаты отсечены.");
+            console.log("\n Все ссылки с ZapMeta и ИИ уже занесены в систему, дубликаты отсечены.");
         }
     } else {
-        console.log("\n Во всей всемирной паутине новых сырых баз пока не появилось.");
+        console.log("\n В поисковых ИИ-агрегаторах новых сырых баз пока не появилось.");
     }
 }
 
