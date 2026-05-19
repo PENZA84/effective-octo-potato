@@ -2,8 +2,12 @@ name: Nigma Cluster Search
 
 on:
   schedule:
-    - cron: '0 */6 * * *' # Автоматический запуск конвейера каждые 6 часов
-  workflow_dispatch: # Та самая кнопка для твоего личного ручного запуска, когда захочешь
+    - cron: '0 */6 * * *' # Авто-запуск каждые 6 часов
+  workflow_dispatch: # Кнопка ручного запуска в меню
+
+# Намертво прописываем права на запись для робота GitHub Actions
+permissions:
+  contents: write
 
 jobs:
   search-and-cluster:
@@ -11,6 +15,8 @@ jobs:
     steps:
       - name: Проверка кода нашего репозитория
         uses: actions/checkout@v4
+        with:
+          persist-credentials: true # Говорим Гитхабу использовать встроенный токен авторизации
 
       - name: Установка обновленной Node.js (Версия 22 LTS)
         uses: actions/setup-node@v4
@@ -24,8 +30,19 @@ jobs:
         run: |
           git config --local user.email "action@github.com"
           git config --local user.name "GitHub Action"
-          # Проверяем пути, чтобы точно записать в нужный http.txt без ошибок
-          git add v2ray_config_collector/data/unique/http.txt || true
-          git add data/unique/http.txt || true
-          git commit -m "Нигма: добавлены новые глобальные RAW-ссылки под Трон и Синбокс" || echo "Нет новых изменений"
-          git push
+          
+          # Проверяем наличие папок перед добавлением, чтобы избежать pathspec ошибок
+          if [ -d "v2ray_config_collector/data/unique" ]; then
+            git add v2ray_config_collector/data/unique/http.txt || true
+          fi
+          if [ -d "data/unique" ]; then
+            git add data/unique/http.txt || true
+          fi
+          
+          # Безопасный коммит: пушим только если появились реальные изменения
+          if ! git diff --cached --quiet; then
+            git commit -m "Нигма: добавлены новые глобальные RAW-ссылки"
+            git push origin main
+          else
+            echo "Новых уникальных ссылок в этом цикле не найдено, рабочая директория чиста."
+          fi
